@@ -107,8 +107,11 @@ if __name__ == '__main__':
     optimized = optimized.round(decimals=6)
     print(optimized)
 
-    #print(type(optimized.values))
-    opt_port = make_port(optimized.values, norm, 20000)
+    opt_port = make_port(optimized.values, norm, start_money)
     port_info(opt_port)
-    plot(opt_port, 'Optimum Allocation Value')
+    spy = yf.Ticker('SPY').history(period='1y')['Close'].to_frame()
+    spynorm = spy / spy.iloc[0]
+    allspy = make_port([1], spynorm, start_money)
+    compare = opt_port.to_frame(name='Optimized').join(allspy.to_frame(name='S&P500'))
+    plot(compare, 'Optimum Allocation Value')
 
