@@ -21,13 +21,14 @@ def plot(data, title):
     plt.show()
 
 def get_close(dataframe):
+    #extracts the closing price from larger set of fetched data
     normal = pd.DataFrame()
     for ticker, cat in dataframe:
         normal[ticker] = dataframe[ticker]['Close']
     return normal
 
 def fill_gaps(dataframe):
-    #fills NaN values potentially in data
+    #fills NaN values in data
     #forward fill
     dataframe.fillna(method='ffill', inplace=True)
     #backwards fill
@@ -40,8 +41,7 @@ def calc_dr(dataframe):
     return daily
     
 def cum_return(dataframe):
-    cum = (dataframe.iloc[-1] / dataframe.iloc[0]) - 1
-    return cum
+    return dataframe.iloc[-1] / dataframe.iloc[0] - 1
 
 def get_rfr(df):
     rfr = yf.Ticker('^IRX') #yield received for investing in 13 week T-Bill
@@ -57,9 +57,15 @@ def get_rfr(df):
             #print(date)
             risk_free.loc[date, 'Close'] = risk_free.loc[old_date, 'Close']
         old_date = date
+
+    #ensures risk free does not contain indexes not present in df
+    for date in risk_free.index:
+        if date not in df.index:
+            risk_free.drop(date, inplace=True)
     return risk_free.sort_index()
 
 def sharpe_ratio(port_dr, risk_free):
+    #sharpe = E[dr - drfr] / std(dr)
     delta = pd.DataFrame.copy(port_dr)
     delta = delta.sub(risk_free['Close'].values)
     sharpe = delta.mean(axis=0) / delta.std(axis=0)
@@ -67,16 +73,19 @@ def sharpe_ratio(port_dr, risk_free):
     return k * sharpe
 
 def make_port(allocs, norm_df, start_money):
+    #returns series containing daily total portfiolio values
     allocated = norm_df.multiply(allocs)
     positions = allocated.multiply(start_money) #starting money
     return positions.sum(axis=1)
 
 def func(allocs, norm_df, start_money, risk_free,):
+    #optimizer function
     port_val = make_port(allocs, norm_df, start_money)
     pdr = calc_dr(port_val)
     return sharpe_ratio(pdr, risk_free) * -1 #turns minimizer into maximizer
 
 def port_info(port):
+    #financial summary of a portfolio
     print(f'Cumulative Return: {cum_return(port)}')
     pdr = calc_dr(port)
     print(f'Average Daily Return: {pdr.mean()}')
@@ -84,6 +93,7 @@ def port_info(port):
 
 
 if __name__ == '__main__':
+    #prepare data
     path = os.getcwd()
     data = fetch_data(path)
     original_data = data
@@ -92,21 +102,24 @@ if __name__ == '__main__':
     norm = close / close.iloc[0]
     risk_free = get_rfr(norm)
 
-    allocs = pd.DataFrame(columns=close.columns)
-    allocs.loc[0] = 1 / len(allocs.columns)
-    x0 = allocs.loc[0].values
+    #set up optimizer function
+    init_val = 1 / len(close.columns)
+    x0 = np.full(len(close.columns), init_val)
     cons = {'type': 'eq',
         'fun': lambda x: sum(x) - 1}
     bnds = [(0, 1) for i in range(0, len(x0))]
-    
     start_money = 20000
+
+    #optimizer
     res = spo.minimize(func, x0, args=(norm, start_money, risk_free), method='SLSQP', bounds=bnds, constraints=cons, options={'disp':True})
 
+    #assigns results to dataframe
     optimized = pd.DataFrame(columns=close.columns)
     optimized.loc[0] = res.x
     optimized = optimized.round(decimals=6)
     print(optimized)
 
+    #display optimized portfolio info and compare with SPY
     opt_port = make_port(optimized.values, norm, start_money)
     port_info(opt_port)
     spy = yf.Ticker('SPY').history(period='1y')['Close'].to_frame()
