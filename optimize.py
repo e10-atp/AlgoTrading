@@ -22,10 +22,10 @@ def plot(data, title):
 
 def get_close(dataframe):
     #extracts the closing price from larger set of fetched data
-    normal = pd.DataFrame()
+    close = pd.DataFrame()
     for ticker, cat in dataframe:
-        normal[ticker] = dataframe[ticker]['Close']
-    return normal
+        close[ticker] = dataframe[ticker]['Close']
+    return close[~close.index.duplicated(keep='first')] #removes duplicate indexes
 
 def fill_gaps(dataframe):
     #fills NaN values in data
@@ -62,6 +62,8 @@ def get_rfr(df):
     for date in risk_free.index:
         if date not in df.index:
             risk_free.drop(date, inplace=True)
+
+    risk_free = risk_free[~risk_free.index.duplicated(keep='first')]
     return risk_free.sort_index()
 
 def sharpe_ratio(port_dr, risk_free):
@@ -107,7 +109,7 @@ if __name__ == '__main__':
     x0 = np.full(len(close.columns), init_val)
     cons = {'type': 'eq',
         'fun': lambda x: sum(x) - 1}
-    bnds = [(0, 1) for i in range(0, len(x0))]
+    bnds = [(0.00, 1) for i in range(0, len(x0))]
     start_money = 20000
 
     #optimizer
@@ -117,7 +119,7 @@ if __name__ == '__main__':
     optimized = pd.DataFrame(columns=close.columns)
     optimized.loc[0] = res.x
     optimized = optimized.round(decimals=6)
-    print(optimized)
+    print(optimized.sort_values(by=[0], axis=1, ascending=False))
 
     #display optimized portfolio info and compare with SPY
     opt_port = make_port(optimized.values, norm, start_money)
