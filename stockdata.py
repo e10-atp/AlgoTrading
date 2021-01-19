@@ -45,7 +45,7 @@ def get_rfr(df):
     risk_free = risk_free[:] / 100 #comes in percentages
 
     #fills missing dates in risk_free
-    old_date = df.index[0]
+    old_date = risk_free.index[0]
     for date in df.index:
         if date not in risk_free.index:
             #print(date)
