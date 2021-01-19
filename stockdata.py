@@ -3,12 +3,13 @@ import os
 import pandas as pd
 import math
 
-def fetch_data(path):
+def fetch_data(timeframe):
+    path = os.getcwd()
     tickers = ''
     with open(os.path.join(path, 'tickers.txt')) as f:
         for line in f:
             tickers +=  ' {}'.format(line.strip())
-    data = yf.download(tickers, period='1y', group_by='ticker', auto_adjust=True)
+    data = yf.download(tickers, period=timeframe, group_by='ticker', auto_adjust=True)
     return data
 
 def get_close(dataframe):
@@ -29,6 +30,7 @@ def normalize(dataframe):
     return dataframe / dataframe.iloc[0]
 
 def calc_dr(dataframe):
+    #takes portfolio df and returns daily return df
     daily = dataframe.copy()
     daily[1:] = (dataframe[1:] / dataframe[:-1].values) - 1
     daily[0:1] = 0
@@ -37,10 +39,10 @@ def calc_dr(dataframe):
 def cum_return(dataframe):
     return dataframe.iloc[-1] / dataframe.iloc[0] - 1
 
-def get_rfr(df):
+def get_rfr(df, timeframe):
     rfr = yf.Ticker('^IRX') #yield received for investing in 13 week T-Bill
     #https://ycharts.com/indicators/3_month_t_bill
-    risk_free = rfr.history(period='1y')['Close'].to_frame()
+    risk_free = rfr.history(period= timeframe)['Close'].to_frame()
     fill_gaps(risk_free)
     risk_free = risk_free[:] / 100 #comes in percentages
 

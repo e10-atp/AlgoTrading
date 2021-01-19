@@ -20,20 +20,19 @@ def func(allocs, norm_df, start_money, risk_free,):
 
 if __name__ == '__main__':
     #prepare data
-    path = os.getcwd()
-    data = sd.fetch_data(path)
-    original_data = data
+    period = '1mo' # String: 1mo, 1yr, see yfinance documentation
+    data = sd.fetch_data(period)
     close = sd.get_close(data)
     sd.fill_gaps(close)
     norm = sd.normalize(close)
-    risk_free = sd.get_rfr(norm)
+    risk_free = sd.get_rfr(norm, period)
 
     #set up optimizer function
     init_val = 1 / len(close.columns)
     x0 = np.full(len(close.columns), init_val)
     cons = {'type': 'eq',
         'fun': lambda x: sum(x) - 1}
-    bnds = [(0.00, 1) for i in range(0, len(x0))]
+    bnds = [(0.05, 0.70) for i in range(0, len(x0))]
     start_money = 20000
 
     #optimizer
