@@ -10,7 +10,8 @@ def plot(data, title):
     ax = data.plot(title=title)
     ax.set_xlabel('Date')
     ax.set_ylabel('Price')
-    plt.show()
+    plt.draw()
+    #call plt.show() at the end
 
 def func(allocs, norm_df, start_money, risk_free,):
     #optimizer function
@@ -20,7 +21,7 @@ def func(allocs, norm_df, start_money, risk_free,):
 
 if __name__ == '__main__':
     #prepare data
-    period = '1mo' # String: 1mo, 1yr, see yfinance documentation
+    period = '3mo' # String: 1mo, 1yr, see yfinance documentation
     data = sd.fetch_data(period)
     close = sd.get_close(data)
     sd.fill_gaps(close)
@@ -32,8 +33,8 @@ if __name__ == '__main__':
     x0 = np.full(len(close.columns), init_val)
     cons = {'type': 'eq',
         'fun': lambda x: sum(x) - 1}
-    bnds = [(0.05, 0.70) for i in range(0, len(x0))]
-    start_money = 20000
+    bnds = [(0.04, 0.70) for i in range(0, len(x0))]
+    start_money = 29500
 
     #optimizer
     res = spo.minimize(func, x0, args=(norm, start_money, risk_free), method='SLSQP', bounds=bnds, constraints=cons, options={'disp':True})
@@ -42,14 +43,18 @@ if __name__ == '__main__':
     optimized = pd.DataFrame(columns=close.columns)
     optimized.loc[0] = res.x
     optimized = optimized.round(decimals=6)
-    print(optimized.sort_values(by=[0], axis=1, ascending=False))
+    optimized.sort_values(by=[0], axis=1, ascending=False, inplace=True)
+    print(optimized)
+    print(optimized.loc[0] * start_money)
 
     #display optimized portfolio info and compare with SPY
     opt_port = sd.make_port(optimized.values, norm, start_money)
     sd.port_info(opt_port)
-    spy = yf.Ticker('SPY').history(period='1y')['Close'].to_frame()
+    spy = yf.Ticker('SPY').history(period=period)['Close'].to_frame()
     spynorm = spy / spy.iloc[0]
+    sd.fill_gaps(spynorm)
     allspy = sd.make_port([1], spynorm, start_money)
     compare = opt_port.to_frame(name='Optimized').join(allspy.to_frame(name='S&P500'))
     plot(compare, 'Optimum Allocation Value')
+    plt.show()
 
