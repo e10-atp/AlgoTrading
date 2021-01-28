@@ -15,7 +15,7 @@ def fetch_data(timeframe):
 def get_close(dataframe):
     #extracts the closing price from larger set of fetched data
     close = pd.DataFrame()
-    for ticker, cat in dataframe:
+    for ticker in dataframe.stack().columns.values:
         close[ticker] = dataframe[ticker]['Close']
     return close[~close.index.duplicated(keep='first')] #removes duplicate indexes
 
