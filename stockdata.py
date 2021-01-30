@@ -3,10 +3,10 @@ import os
 import pandas as pd
 import math
 
-def fetch_data(timeframe):
+def fetch_data(timeframe, filename):
     path = os.getcwd()
     tickers = ''
-    with open(os.path.join(path, 'tickers.txt')) as f:
+    with open(os.path.join(path, filename)) as f:
         for line in f:
             tickers +=  ' {}'.format(line.strip())
     data = yf.download(tickers, period=timeframe, group_by='ticker', auto_adjust=True)

@@ -22,7 +22,7 @@ def func(allocs, norm_df, start_money, risk_free,):
 if __name__ == '__main__':
     #prepare data
     period = '3mo' # String: 1mo, 1yr, see yfinance documentation
-    data = sd.fetch_data(period)
+    data = sd.fetch_data(period, 'tickers.txt')
     close = sd.get_close(data)
     sd.fill_gaps(close)
     norm = sd.normalize(close)
@@ -33,8 +33,8 @@ if __name__ == '__main__':
     x0 = np.full(len(close.columns), init_val)
     cons = {'type': 'eq',
         'fun': lambda x: sum(x) - 1}
-    bnds = [(0.04, 0.70) for i in range(0, len(x0))]
-    start_money = 29500
+    bnds = [(0.05, 0.70) for i in range(0, len(x0))]
+    start_money = 28500
 
     #optimizer
     res = spo.minimize(func, x0, args=(norm, start_money, risk_free), method='SLSQP', bounds=bnds, constraints=cons, options={'disp':True})

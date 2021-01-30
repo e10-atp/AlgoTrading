@@ -7,7 +7,7 @@ import os
 
 def add_bands(df, ticker):
     window = 10
-    n = 1.9
+    n = 1.5
     df[ticker, 'EMA'] = df[ticker, 'Close'].ewm(span=window).mean() #exponential moving average
     df[ticker, '+nSD'] = df[ticker, 'EMA'] + df[ticker, 'Close'].rolling(window=window).std() * n
     df[ticker, '-nSD'] = df[ticker, 'EMA'] - df[ticker, 'Close'].rolling(window=window).std() * n
@@ -18,7 +18,7 @@ def plot(df, ticker):
     mpf.make_addplot(df[['+nSD', '-nSD']], color='#7ab4e5', width=0.25)
     ]
 
-    save = dict(fname = os.path.join(os.getcwd(), f'Plots\\{ticker}bands.png'))
+    save = dict(fname = os.path.join(os.getcwd(), f'Plots\\{ticker}bands.png'), pad_inches=0.25)
 
     mpf.plot(df, addplot=apd, type='candle', style='yahoo', volume=True, 
     fill_between=dict(y1=df['-nSD'].values, y2=df['+nSD'].values, alpha=0.2, color='#7ab4e5'),
@@ -29,7 +29,7 @@ def plot(df, ticker):
 
 if __name__ == '__main__':
     period = '3mo'
-    data = sd.fetch_data(period)
+    data = sd.fetch_data(period, 'tickers.txt')
     sd.fill_gaps(data)
 
     for ticker in data.stack().columns.values:
